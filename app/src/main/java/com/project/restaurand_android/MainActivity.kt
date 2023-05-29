@@ -1,7 +1,9 @@
 package com.project.restaurand_android
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.SearchView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -10,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import com.project.restaurand_android.ui.theme.RestauRandAndroidTheme
 
 import okhttp3.MediaType.Companion.toMediaType
@@ -28,6 +32,7 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     lateinit var searchView: SearchView
     lateinit var textView: TextView
+    lateinit var mapsButton: Button
 
     // savedInstanceState is a Bundle type, which contains the saved state of the activity.
     // This is data saved from a previous instance of the activity (screen), such as when the
@@ -41,6 +46,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.layout)
         searchView = findViewById(R.id.searchView)
         textView = findViewById(R.id.textView)
+        mapsButton = findViewById(R.id.button)
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -60,6 +66,12 @@ class MainActivity : ComponentActivity() {
                 return false
             }
         })
+
+        mapsButton.setOnClickListener{
+            Log.d("TEST: ", "bruh")
+            val intent = Intent(this@MainActivity, Maps::class.java);
+            startActivity(intent)
+        }
     }
 }
 
