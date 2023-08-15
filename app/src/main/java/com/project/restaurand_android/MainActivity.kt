@@ -25,8 +25,15 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.annotations.SerializedName
 import com.project.restaurand_android.ui.theme.RestauRandAndroidTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -53,7 +60,7 @@ class MainActivity : ComponentActivity() {
         textView = findViewById(R.id.textView)
         mapsButton = findViewById(R.id.button)
 
-        // Initialize locationManager
+        //region Initialize locationManager + FINE LOCATION + PERMISSION STUFF
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         //locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
 
@@ -75,7 +82,9 @@ class MainActivity : ComponentActivity() {
                 LOCATION_PERMISSION_REQUEST_CODE
             )
         }
+        //endregion
 
+        //region searchView textListener: WHEN USER SEARCHES IN TEXT BAR, THIS CODE RUNS
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
@@ -89,9 +98,13 @@ class MainActivity : ComponentActivity() {
                             .create(PlacesApi::class.java)
 
                         try {
-                            val response = placesApi.searchPlaces(it, apiKey)
-                            if (response.isSuccessful) {
-                                val places = response.body()?.results
+                            // Generate the response using ChatGPT
+                            val response = generateChatGPTResponse(it)
+
+                            // Use the generated response as the query for places search
+                            val placesResponse = placesApi.searchPlaces(response, apiKey)
+                            if (placesResponse.isSuccessful) {
+                                val places = placesResponse.body()?.results
                                 val placesList: MutableList<String> = mutableListOf()
                                 val forLoopLimiter = places?.size?.minus(1)
                                 for (i in 0..(forLoopLimiter ?: 0)) {
@@ -99,11 +112,8 @@ class MainActivity : ComponentActivity() {
                                 }
                                 val placesArrayJoined = placesList.joinToString(separator = "\n")
                                 textView.text = placesArrayJoined
-
-                                //val response = generateChatGPTResponse(query)
-                                //textView.text = response
                             } else {
-                                Log.e("API Error", "Response code: ${response.code()}")
+                                Log.e("API Error", "Response code: ${placesResponse.code()}")
                             }
                         } catch (e: Exception) {
                             Log.e("API Error", e.message ?: "Unknown error")
@@ -117,6 +127,7 @@ class MainActivity : ComponentActivity() {
                 return false
             }
         })
+        //endregion
 
         mapsButton.setOnClickListener {
             val intent = Intent(this@MainActivity, Maps::class.java)
@@ -124,6 +135,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    //region PLACES API INIT + HTTP REQUESTS
     data class Place(val name: String, val address: String)
 
     interface PlacesApi {
@@ -138,15 +150,14 @@ class MainActivity : ComponentActivity() {
         @SerializedName("results") val results: List<Place>,
         // Add other necessary fields from the response
     )
+    //endregion
 
+    //region onLocationChanged (RUNS WHEN APP ASKS FOR LOCATION PERMISSIONS)
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
             // Get the latitude and longitude
             val latitude = location.latitude
             val longitude = location.longitude
-
-            Log.d("CDEBUG: ", "latitude: $latitude")
-            Log.d("CDEBUG: ", "longitude: $longitude")
 
             // Reverse geocoding to get the address
             val geocoder = Geocoder(this@MainActivity, Locale.getDefault())
@@ -155,10 +166,7 @@ class MainActivity : ComponentActivity() {
             if (addresses != null) {
                 if (addresses.isNotEmpty()) {
                     val address = addresses[0]
-                    val cityName = address.locality // Get the city name
-
-                    // Do something with the city name
-                    Log.d("CDEBUG: ", "City: $cityName")
+                    val cityName = address.locality
                     userCity = cityName
                 } else {
                     Log.d("CDEBUG: ", "No address found")
@@ -176,7 +184,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 100
     }
+    //endregion
 
+    //region startLocationUpdates (THE PART THAT ACTUALLY ASKS LocationManager FOR LOCATION)
     private fun startLocationUpdates() {
         val locationPermission = Manifest.permission.ACCESS_FINE_LOCATION
         if (ContextCompat.checkSelfPermission(this, locationPermission) == PackageManager.PERMISSION_GRANTED) {
@@ -190,12 +200,15 @@ class MainActivity : ComponentActivity() {
             Log.d("CDEBUG: ", "Location Permission not granted")
         }
     }
+    //endregion
 
+    //region onRequestPermissionResult (DOES THIS OR THAT DEPENDING ON IF USER SAID YES/NO)
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
         grantResults: IntArray
     ) {
+        Log.d("CDEBUG: ", "does this run 1")
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -205,8 +218,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    //endregion
 }
 
+//region @composable, @preview: idk what this is it came with the template
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
@@ -222,60 +237,65 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
+//endregion
 
+//region generateChatGPTResponse: this is the part that generates the prompt, sends, and receives
+//                                  a result back from ChatGPT API
+suspend fun generateChatGPTResponse(prompt: String): String {
+    val apiKey = "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"
+    val apiUrl = "https://api.openai.com/v1/chat/completions"
 
-//suspend fun generateChatGPTResponse(prompt: String): String {
-//    val apiKey = "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"
-//    val apiUrl = "https://api.openai.com/v1/chat/completions"
-//
-//    // tuned prompts will have instruction texts appended to the user's prompt in order to
-//    //   keep the responses in a predictable format.
-////    val tunedPrompt =
-////        prompt + ". " +
-////                "I'm located in the city of: ${userCity}." +
-////                "Generate 10 such locations in an array format." +
-////                "Exclude fast food chains." +
-////                "Do not include any other text."
+    // tuned prompts will have instruction texts appended to the user's prompt in order to
+    //   keep the responses in a predictable format.
 //    val tunedPrompt =
 //        prompt + ". " +
-//                "I'm located in the city of: $userCity."
-//
-//    val requestBodyJson = JSONObject()
-//        .put("model", "gpt-3.5-turbo")
-//        .put("messages", JSONArray().put(
-//            JSONObject()
-//            .put("role", "user")
-//            .put("content", tunedPrompt)))
-//
-//    val client = OkHttpClient()
-//    val mediaType = "application/json".toMediaType()
-//    val requestBody = requestBodyJson.toString().toRequestBody(mediaType)
-//
-//    val request = Request.Builder()
-//        .url(apiUrl)
-//        .post(requestBody)
-//        .header("Authorization", "Bearer $apiKey")
-//        .build()
-//
-//    return withContext(Dispatchers.IO) {
-//        val response = client.newCall(request).execute()
-//        val responseBody = response.body?.string()
-//
-//        Log.d("CDEBUG response: ", response.toString())
-//        Log.d("CDEBUG responseBody: ", responseBody.toString())
-//
-//        if (response.isSuccessful && !responseBody.isNullOrBlank()) {
-//            val jsonResponse = JSONObject(responseBody)
-//            val choices = jsonResponse.getJSONArray("choices")
-//
-//            if (choices.length() > 0) {
-//                val firstChoice = choices.getJSONObject(0)
-//                val message = firstChoice.getJSONObject("message")
-//                val content = message.getString("content")
-//                return@withContext content
-//            }
-//        }
-//
-//        return@withContext "Failed to generate a response."
-//    }.replace("\\r", "").replace("\\n", "\n")
-//}
+//                "I'm located in the city of: ${userCity}." +
+//                "Generate 10 such locations in an array format." +
+//                "Exclude fast food chains." +
+//                "Do not include any other text."
+    val tunedPrompt =
+                "Determine the cuisine that matches the most based on the upcoming prompt. " +
+                "Your answer will be exactly one word, no more, no less. " +
+                "This word will be the name of the cuisine that you have determined." +
+                "Here is the prompt: " + prompt
+
+    val requestBodyJson = JSONObject()
+        .put("model", "gpt-3.5-turbo")
+        .put("messages", JSONArray().put(
+            JSONObject()
+            .put("role", "user")
+            .put("content", tunedPrompt)))
+
+    val client = OkHttpClient()
+    val mediaType = "application/json".toMediaType()
+    val requestBody = requestBodyJson.toString().toRequestBody(mediaType)
+
+    val request = Request.Builder()
+        .url(apiUrl)
+        .post(requestBody)
+        .header("Authorization", "Bearer $apiKey")
+        .build()
+
+    return withContext(Dispatchers.IO) {
+        val response = client.newCall(request).execute()
+        val responseBody = response.body?.string()
+
+        Log.d("CDEBUG response: ", response.toString())
+        Log.d("CDEBUG responseBody: ", responseBody.toString())
+
+        if (response.isSuccessful && !responseBody.isNullOrBlank()) {
+            val jsonResponse = JSONObject(responseBody)
+            val choices = jsonResponse.getJSONArray("choices")
+
+            if (choices.length() > 0) {
+                val firstChoice = choices.getJSONObject(0)
+                val message = firstChoice.getJSONObject("message")
+                val content = message.getString("content")
+                return@withContext content
+            }
+        }
+
+        return@withContext "Failed to generate a response."
+    }.replace("\\r", "").replace("\\n", "\n")
+}
+//endregion
