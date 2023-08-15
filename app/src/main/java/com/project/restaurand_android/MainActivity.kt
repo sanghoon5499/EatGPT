@@ -1,6 +1,15 @@
 package com.project.restaurand_android
 
+
+import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -11,120 +20,192 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.findNavController
+import com.google.gson.annotations.SerializedName
 import com.project.restaurand_android.ui.theme.RestauRandAndroidTheme
-
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
+import retrofit2.http.Query
+import java.util.Locale
 
-// override is used very often as Android provides a framework with many pre-defined classes
-//   devs can extend or implement to fit our needs. To stay safe, we override these to use them.
 
+
+var userCity = ""
 
 class MainActivity : ComponentActivity() {
     lateinit var searchView: SearchView
     lateinit var textView: TextView
     lateinit var mapsButton: Button
 
-    // savedInstanceState is a Bundle type, which contains the saved state of the activity.
-    // This is data saved from a previous instance of the activity (screen), such as when the
-    //   the activity is destroyed and recreated (screen rotation), or other changes.
-    override fun onCreate(savedInstanceState: Bundle?) {
-        // "super" is in reference to the page we want to initialize. "super" = "superclass"
-        // This line is only called once
-        super.onCreate(savedInstanceState)
+    private lateinit var locationManager: LocationManager
 
-        // sets the UI layout as specified in the corresponding layout.xml file
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.layout)
         searchView = findViewById(R.id.searchView)
         textView = findViewById(R.id.textView)
         mapsButton = findViewById(R.id.button)
 
+        // Initialize locationManager
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        //locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+
+        // Request a single location update
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            locationManager.requestSingleUpdate(
+                LocationManager.GPS_PROVIDER,
+                locationListener,
+                null
+            )
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                // check if query exists, and set it as "it"
                 query?.let {
                     lifecycleScope.launch {
-                        val response = generateChatGPTResponse(it)
-                        textView.text = response
+                        val apiKey = "AIzaSyBMCbfKMOQmplUNvOiHNBalzBiXXabRG2c"
+                        val placesApi = Retrofit.Builder()
+                            .baseUrl("https://maps.googleapis.com/maps/api/")
+                            .addConverterFactory(GsonConverterFactory.create())
+                            .client(OkHttpClient())
+                            .build()
+                            .create(PlacesApi::class.java)
+
+                        try {
+                            val response = placesApi.searchPlaces(it, apiKey)
+                            if (response.isSuccessful) {
+                                val places = response.body()?.results
+                                val placesList: MutableList<String> = mutableListOf()
+                                val forLoopLimiter = places?.size?.minus(1)
+                                for (i in 0..(forLoopLimiter ?: 0)) {
+                                    placesList.add(places?.get(i)?.name.toString())
+                                }
+                                val placesArrayJoined = placesList.joinToString(separator = "\n")
+                                textView.text = placesArrayJoined
+
+                                //val response = generateChatGPTResponse(query)
+                                //textView.text = response
+                            } else {
+                                Log.e("API Error", "Response code: ${response.code()}")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("API Error", e.message ?: "Unknown error")
+                        }
                     }
                 }
                 return false
             }
 
-            // This function probably not needed
             override fun onQueryTextChange(newText: String?): Boolean {
-                // runs each time a change in the text field occurs
                 return false
             }
         })
 
-        mapsButton.setOnClickListener{
-            Log.d("TEST: ", "bruh")
-            val intent = Intent(this@MainActivity, Maps::class.java);
+        mapsButton.setOnClickListener {
+            val intent = Intent(this@MainActivity, Maps::class.java)
             startActivity(intent)
         }
     }
-}
 
-// the API call takes time, so we pause and resume the function at a later time without
-//   blocking the thread it's running on.
-suspend fun generateChatGPTResponse(prompt: String): String {
-    //https://platform.openai.com/account/api-keys
-    val apiKey = "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"
-    val apiUrl = "https://api.openai.com/v1/completions"
+    data class Place(val name: String, val address: String)
 
-    // Build the response to send to the model
-    val requestBodyJson = JSONObject()
-        .put("model", "text-davinci-003")
-        .put("prompt", prompt)
-        .put("max_tokens", 100) // response length (char count I think)
-        .put("temperature", 0.8) // response randomness (lower = more accurate)
+    interface PlacesApi {
+        @GET("place/textsearch/json")
+        suspend fun searchPlaces(
+            @Query("query") query: String,
+            @Query("key") apiKey: String
+        ): Response<PlaceResponse>
+    }
 
-    val client = OkHttpClient()
-    val mediaType = "application/json".toMediaType()
-    val requestBody = requestBodyJson.toString().toRequestBody(mediaType)
+    data class PlaceResponse(
+        @SerializedName("results") val results: List<Place>,
+        // Add other necessary fields from the response
+    )
 
-    val request = Request.Builder()
-        .url(apiUrl)
-        .post(requestBody)
-        .header("Authorization", "Bearer $apiKey")
-        .build()
+    private val locationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            // Get the latitude and longitude
+            val latitude = location.latitude
+            val longitude = location.longitude
 
-    return withContext(Dispatchers.IO) {
-        val response = client.newCall(request).execute()
-        val responseBody = response.body?.string()
+            Log.d("CDEBUG: ", "latitude: $latitude")
+            Log.d("CDEBUG: ", "longitude: $longitude")
 
-        Log.d("TEST response: ", response.toString())
-        Log.d("TEST responseBody: ", responseBody.toString())
+            // Reverse geocoding to get the address
+            val geocoder = Geocoder(this@MainActivity, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(latitude, longitude, 1)
 
-        if (response.isSuccessful && !responseBody.isNullOrBlank()) {
-            val jsonResponse = JSONObject(responseBody)
-            val choices = jsonResponse.getJSONArray("choices")
+            if (addresses != null) {
+                if (addresses.isNotEmpty()) {
+                    val address = addresses[0]
+                    val cityName = address.locality // Get the city name
 
-            if (choices.length() > 0) {
-                val firstChoice = choices.getJSONObject(0)
-                val text = firstChoice.getString("text")
-                return@withContext text
+                    // Do something with the city name
+                    Log.d("CDEBUG: ", "City: $cityName")
+                    userCity = cityName
+                } else {
+                    Log.d("CDEBUG: ", "No address found")
+                }
             }
         }
 
-        // Return an error message if something went wrong
-        return@withContext "Failed to generate a response."
-    }.replace("\\r", "").replace("\\n", "\n")
+        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+
+        override fun onProviderEnabled(provider: String) {}
+
+        override fun onProviderDisabled(provider: String) {}
+    }
+
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 100
+    }
+
+    private fun startLocationUpdates() {
+        val locationPermission = Manifest.permission.ACCESS_FINE_LOCATION
+        if (ContextCompat.checkSelfPermission(this, locationPermission) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER,
+                0L,
+                0f,
+                locationListener
+            )
+        } else {
+            Log.d("CDEBUG: ", "Location Permission not granted")
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startLocationUpdates()
+            } else {
+                Log.d("CDEBUG: ", "Location permission denied")
+            }
+        }
+    }
 }
-
-
-
-
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
@@ -141,3 +222,60 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
+
+
+//suspend fun generateChatGPTResponse(prompt: String): String {
+//    val apiKey = "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"
+//    val apiUrl = "https://api.openai.com/v1/chat/completions"
+//
+//    // tuned prompts will have instruction texts appended to the user's prompt in order to
+//    //   keep the responses in a predictable format.
+////    val tunedPrompt =
+////        prompt + ". " +
+////                "I'm located in the city of: ${userCity}." +
+////                "Generate 10 such locations in an array format." +
+////                "Exclude fast food chains." +
+////                "Do not include any other text."
+//    val tunedPrompt =
+//        prompt + ". " +
+//                "I'm located in the city of: $userCity."
+//
+//    val requestBodyJson = JSONObject()
+//        .put("model", "gpt-3.5-turbo")
+//        .put("messages", JSONArray().put(
+//            JSONObject()
+//            .put("role", "user")
+//            .put("content", tunedPrompt)))
+//
+//    val client = OkHttpClient()
+//    val mediaType = "application/json".toMediaType()
+//    val requestBody = requestBodyJson.toString().toRequestBody(mediaType)
+//
+//    val request = Request.Builder()
+//        .url(apiUrl)
+//        .post(requestBody)
+//        .header("Authorization", "Bearer $apiKey")
+//        .build()
+//
+//    return withContext(Dispatchers.IO) {
+//        val response = client.newCall(request).execute()
+//        val responseBody = response.body?.string()
+//
+//        Log.d("CDEBUG response: ", response.toString())
+//        Log.d("CDEBUG responseBody: ", responseBody.toString())
+//
+//        if (response.isSuccessful && !responseBody.isNullOrBlank()) {
+//            val jsonResponse = JSONObject(responseBody)
+//            val choices = jsonResponse.getJSONArray("choices")
+//
+//            if (choices.length() > 0) {
+//                val firstChoice = choices.getJSONObject(0)
+//                val message = firstChoice.getJSONObject("message")
+//                val content = message.getString("content")
+//                return@withContext content
+//            }
+//        }
+//
+//        return@withContext "Failed to generate a response."
+//    }.replace("\\r", "").replace("\\n", "\n")
+//}
