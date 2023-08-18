@@ -5,28 +5,139 @@
     android:orientation="vertical">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/greyBar"
         android:layout_width="match_parent"
-        android:layout_height="545dp"
-        android:layout_below="@id/button"
-        android:layout_marginTop="90dp"
-        android:text="Hello World!"
+        android:layout_height="50dp"
+        android:background="#282830"
+        android:text=""
         android:textSize="20sp" />
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/searchView"
-        android:layout_marginTop="44dp"
-        android:text="Maps" />
+    <!--region searchBox stuff-->
+    <TextView
+        android:id="@+id/searchBar"
+        android:layout_width="match_parent"
+        android:layout_below="@id/greyBar"
+        android:layout_height="58dp"
+        android:background="#ebebeb"
+        android:text=""
+        android:textSize="20sp" />
 
     <SearchView
         android:id="@+id/searchView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:queryHint="search something" />
+        android:layout_height="40dp"
+        android:layoutDirection="rtl"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginVertical="10dp"
+        android:layout_below="@id/greyBar"
+        android:background="#FFFFFF"
+        android:queryHint="What are you craving?"
+        android:iconifiedByDefault="false" />
+    <!--endregion-->
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="545dp"
+        android:layout_marginTop="90dp"
+        android:text=""
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/searchResult1BoundingBox"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_below="@id/searchBar"
+        android:layout_width="match_parent"
+        android:layout_height="85dp"
+        android:background="#ebebeb"
+        android:text=""
+        android:textSize="20sp" />
+    <TextView
+        android:id="@+id/searchResult1"
+        android:layout_below="@id/searchBar"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="searchResult1" />
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="80dp"
+        android:layout_height="85dp"
+        android:layout_below="@id/searchView"
+        android:layout_alignRight="@id/searchResult1BoundingBox"
+        android:layout_alignTop="@id/searchResult1"
+        android:text="›"
+        android:textSize="35dp" />
+
+    <TextView
+        android:id="@+id/searchResult2BoundingBox"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_below="@id/searchResult1"
+        android:layout_width="match_parent"
+        android:layout_height="85dp"
+        android:background="#ebebeb"
+        android:text=""
+        android:textSize="20sp" />
+    <TextView
+        android:id="@+id/searchResult2"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_below="@id/searchResult1"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="searchResult2" />
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="80dp"
+        android:layout_height="85dp"
+        android:layout_below="@id/searchView"
+        android:layout_alignRight="@id/searchResult2BoundingBox"
+        android:layout_alignTop="@id/searchResult2"
+        android:text="›"
+        android:textSize="35dp" />
+
+    <TextView
+        android:id="@+id/searchResult3BoundingBox"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="10dp"
+        android:layout_below="@id/searchResult2"
+        android:layout_width="match_parent"
+        android:layout_height="85dp"
+        android:background="#ebebeb"
+        android:text=""
+        android:textSize="20sp" />
+    <TextView
+        android:id="@+id/searchResult3"
+        android:layout_marginVertical="10dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_below="@id/searchResult2"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="searchResult3" />
+    <Button
+        android:id="@+id/button3"
+        android:layout_width="80dp"
+        android:layout_height="85dp"
+        android:layout_below="@id/searchView"
+        android:layout_alignRight="@id/searchResult3BoundingBox"
+        android:layout_alignTop="@id/searchResult3"
+        android:text="›"
+        android:textSize="35dp" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/searchResult3"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="120dp"
+        android:textSize="35dp"
+        android:textStyle="bold"
+        android:textColor="#AAAAAA"
+        android:text="EatGPT" />
 
 
 </RelativeLayout>

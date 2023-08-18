@@ -12,6 +12,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.SearchView
 import android.widget.TextView
@@ -34,13 +35,18 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import org.w3c.dom.Text
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.Locale
-
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.Serial
+import java.net.HttpURLConnection
+import java.net.URL
 
 
 var userCity = ""
@@ -48,7 +54,17 @@ var userCity = ""
 class MainActivity : ComponentActivity() {
     lateinit var searchView: SearchView
     lateinit var textView: TextView
-    lateinit var mapsButton: Button
+    lateinit var searchResult1: TextView
+    lateinit var searchResult2: TextView
+    lateinit var searchResult3: TextView
+    lateinit var button1: Button
+    lateinit var button2: Button
+    lateinit var button3: Button
+    val initialSize = 10
+    var topThreeNames: Array<String> = Array(initialSize) { "" }
+    var topThreeAddress: Array<String> = Array(initialSize) { "" }
+
+    lateinit var searchResultArray: Array<TextView>
 
     private lateinit var locationManager: LocationManager
 
@@ -58,10 +74,17 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.layout)
         searchView = findViewById(R.id.searchView)
         textView = findViewById(R.id.textView)
-        mapsButton = findViewById(R.id.button)
+        searchResult1 = findViewById(R.id.searchResult1)
+        searchResult2 = findViewById(R.id.searchResult2)
+        searchResult3 = findViewById(R.id.searchResult3)
+        button1 = findViewById(R.id.button1)
+        button2 = findViewById(R.id.button2)
+        button3 = findViewById(R.id.button3)
+        searchResultArray = arrayOf(searchResult1, searchResult2, searchResult3)
+
 
         //region Initialize locationManager + FINE LOCATION + PERMISSION STUFF
-        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         //locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
 
         // Request a single location update
@@ -98,20 +121,36 @@ class MainActivity : ComponentActivity() {
                             .create(PlacesApi::class.java)
 
                         try {
-                            // Generate the response using ChatGPT
-                            val response = generateChatGPTResponse(it)
+                            // Generate the response using ChatGPT.
+                            // Add "cuisine" to the response so Google Places doesn't return
+                            //  something like "American Eagle" instead of "Milestones"
+                            val response = generateChatGPTResponse(it) + " cuisine"
 
                             // Use the generated response as the query for places search
                             val placesResponse = placesApi.searchPlaces(response, apiKey)
+                            Log.d("CDEBUG: placesResponse", "${placesResponse}")
                             if (placesResponse.isSuccessful) {
                                 val places = placesResponse.body()?.results
-                                val placesList: MutableList<String> = mutableListOf()
-                                val forLoopLimiter = places?.size?.minus(1)
-                                for (i in 0..(forLoopLimiter ?: 0)) {
-                                    placesList.add(places?.get(i)?.name.toString())
+//                                val placesArrayJoined = places?.joinToString(separator = "\n") { it.name }
+//                                textView.text = placesArrayJoined
+
+                                Log.d("CDEBUG: name: ", "${places?.get(0)?.name}")
+                                Log.d("CDEBUG: address: ", "${places?.get(0)?.address}")
+
+                                searchResult1.text = "bruuuuh"
+                                // Add names and address to list to send them to Maps.kt if user clicks on go to maps button
+                                for (i in 0..2) {
+                                    val tempName = places?.get(i)?.name
+                                    val tempAddress = places?.get(i)?.address
+                                    Log.d("CDEBUG: name: ", "does this run 1 $i")
+                                    if (tempName != null) {
+                                        topThreeNames[i] = tempName
+                                        searchResultArray[i].text = tempName
+                                    }
+                                    if (tempAddress != null) {
+                                        topThreeAddress[i] = tempAddress
+                                    }
                                 }
-                                val placesArrayJoined = placesList.joinToString(separator = "\n")
-                                textView.text = placesArrayJoined
                             } else {
                                 Log.e("API Error", "Response code: ${placesResponse.code()}")
                             }
@@ -129,14 +168,38 @@ class MainActivity : ComponentActivity() {
         })
         //endregion
 
-        mapsButton.setOnClickListener {
+        val onClickListener = View.OnClickListener { view ->
+            // Handle the click event here
             val intent = Intent(this@MainActivity, Maps::class.java)
-            startActivity(intent)
+
+            // Determine the index based on the clicked button's ID
+            val index = when (view.id) {
+                R.id.button1 -> 0
+                R.id.button2 -> 1
+                R.id.button3 -> 2
+                else -> -1 // Default value or handle other cases
+            }
+
+            if (index in 0 .. topThreeNames.size - 1) {
+                intent.putExtra("BUSINESS_NAME", topThreeNames[index])
+                intent.putExtra("BUSINESS_ADDRESS", topThreeAddress[index])
+                startActivity(intent)
+            }
         }
+
+        button1.setOnClickListener(onClickListener)
+        button2.setOnClickListener(onClickListener)
+        button3.setOnClickListener(onClickListener)
+
     }
 
     //region PLACES API INIT + HTTP REQUESTS
-    data class Place(val name: String, val address: String)
+    data class Place(
+        val name: String,
+        @SerializedName("formatted_address") val address: String,
+        @SerializedName("price_level") val priceLevel: Int,
+        val rating: Double
+    )
 
     interface PlacesApi {
         @GET("place/textsearch/json")

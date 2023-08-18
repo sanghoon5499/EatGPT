@@ -3,6 +3,8 @@ package com.project.restaurand_android
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
@@ -25,8 +27,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-
-
+import java.io.IOException
 
 
 // override is used very often as Android provides a framework with many pre-defined classes
@@ -39,6 +40,8 @@ class Maps : ComponentActivity(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationManager: LocationManager
+    private lateinit var businessName: String
+    private lateinit var businessAddress: String
 
     // savedInstanceState is a Bundle type, which contains the saved state of the activity.
     // This is data saved from a previous instance of the activity (screen), such as when the
@@ -56,6 +59,14 @@ class Maps : ComponentActivity(), OnMapReadyCallback {
 
         // Initialize the FusedLocationProviderClient
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+
+        businessName = intent.getStringExtra("BUSINESS_NAME").toString()
+        businessAddress = intent.getStringExtra("BUSINESS_ADDRESS").toString()
+        if (businessName != null || businessAddress != null) {
+            // Use the businessName value in Maps activity
+            Log.d("CDEBUG: MapsActivity", "Received business name: $businessName")
+            Log.d("CDEBUG: MapsActivity", "Received business location: $businessAddress")
+        }
     }
 
     override fun onResume() {
@@ -109,7 +120,25 @@ class Maps : ComponentActivity(), OnMapReadyCallback {
         }
         fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
             if (location != null) {
-                val userLatLng = LatLng(location.latitude, location.longitude)
+                var businessLong = 0.0
+                var businessLat = 0.0
+                val geocoder = Geocoder(this) // 'this' is your context
+                try {
+                    val addresses: List<Address> = geocoder.getFromLocationName(businessAddress, 1) as List<Address>
+                    if (addresses.isNotEmpty()) {
+                        businessLong = addresses[0].latitude
+                        businessLat = addresses[0].longitude
+                    } else {
+                        // No matching address found
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                    // Handle IOException
+                }
+
+                Log.d("CDEBUG: ", "${businessLong}, ${businessLat}")
+
+                val userLatLng = LatLng(businessLong, businessLat)
                 val cameraPosition = CameraPosition.Builder()
                     .target(userLatLng)
                     .zoom(15f) // You can adjust the zoom level as needed
