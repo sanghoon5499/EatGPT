@@ -1,9 +1,7 @@
-package com.project.restaurand_android
+package com.project.EatGPT
 
 
 import android.Manifest
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
@@ -25,7 +23,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.annotations.SerializedName
-import com.project.restaurand_android.ui.theme.RestauRandAndroidTheme
+import com.project.EatGPT.ui.theme.EatGPTTheme
+import com.project.EatGPT.R
+//import com.project.EatGPT.ui.theme.RestauRandAndroidTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,14 +35,12 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import org.w3c.dom.Text
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.Locale
-
 
 var userCity = ""
 
@@ -292,7 +290,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    RestauRandAndroidTheme {
+    EatGPTTheme {
         Greeting("Android")
     }
 }
@@ -305,7 +303,7 @@ suspend fun generateChatGPTResponse(prompt: String): String {
     // tuned prompts will have instruction texts appended to the user's prompt in order to
     //   keep the responses in a predictable format.
     val tunedPrompt =
-                "Determine the cuisine that matches the most based on the upcoming prompt. " +
+        "Determine the cuisine that matches the most based on the upcoming prompt. " +
                 "Your answer will be exactly one word, no more, no less. " +
                 "This word will be the name of the cuisine that you have determined." +
                 "Here is the prompt: " + prompt
@@ -314,8 +312,8 @@ suspend fun generateChatGPTResponse(prompt: String): String {
         .put("model", "gpt-3.5-turbo")
         .put("messages", JSONArray().put(
             JSONObject()
-            .put("role", "user")
-            .put("content", tunedPrompt)))
+                .put("role", "user")
+                .put("content", tunedPrompt)))
 
     val client = OkHttpClient()
     val mediaType = "application/json".toMediaType()

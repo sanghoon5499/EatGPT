@@ -1,4 +1,4 @@
-package com.project.restaurand_android
+package com.project.EatGPT
 
 import android.Manifest
 import android.content.Context
@@ -8,18 +8,10 @@ import android.location.Geocoder
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
-import android.widget.SearchView
-import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
-import com.project.restaurand_android.ui.theme.RestauRandAndroidTheme
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng

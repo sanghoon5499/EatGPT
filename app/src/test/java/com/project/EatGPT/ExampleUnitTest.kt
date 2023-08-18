@@ -1,4 +1,4 @@
-package com.project.restaurand_android
+package com.project.EatGPT
 
 import org.junit.Test
 

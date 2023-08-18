@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace 'com.project.restaurand_android'
+    namespace 'com.project.EatGPT'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.project.restaurand_android"
+        applicationId "com.project.EatGPT"
         minSdk 33
         targetSdk 34
         versionCode 1
