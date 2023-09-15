@@ -1,11 +1,16 @@
 # EatGPT
 
 Just input your cravings and EatGPT will return you some nearby restaurants that best fits that description! <br /><br />
+
+![image](https://github.com/sanghoon5499/EatGPT/assets/17420160/731b5ee7-1488-4377-a294-0ef1f0995cf7)
+
 Here's a quick example, "something cheesy but not deep fried"<br />
 You get a few nearby restaurants that fit that description:<br />
-[insert image here]<br /><br />
+![image](https://github.com/sanghoon5499/EatGPT/assets/17420160/ac9d17f7-5ed7-4f02-b1fa-783acedb4545)
+<br /><br />
 You can also check out where it is on Google Maps!<br />
-[insert image here]<br /><br />
+![image](https://github.com/sanghoon5499/EatGPT/assets/17420160/948b5c86-6da9-4695-9b76-e4a8264875e1)
+<br /><br />
 
 # Tech used
 - Google Places
@@ -28,6 +33,7 @@ You can also check out where it is on Google Maps!<br />
 <br /><br />
 
 # Things to Consider / Features yet to be added
+ - note: code made public without api keys anywhere; need to create gitignore and set things up later
  - Need to clear the database at one point (30 day limit?)
  - Should probably let the user choose the cuisine (top three selections by ChatGPT)
  - Add in feature to send user to actual google maps for directions
