@@ -109,7 +109,6 @@ class MainActivity : ComponentActivity() {
                 query?.let {
                     lifecycleScope.launch {
                         // Build info required to send out the API request
-                        val apiKey = "AIzaSyBMCbfKMOQmplUNvOiHNBalzBiXXabRG2c"
                         val placesApi = Retrofit.Builder()
                             .baseUrl("https://maps.googleapis.com/maps/api/")
                             .addConverterFactory(GsonConverterFactory.create())
@@ -297,7 +296,6 @@ fun GreetingPreview() {
 
 // ChatGPI API call
 suspend fun generateChatGPTResponse(prompt: String): String {
-    val apiKey = "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"
     val apiUrl = "https://api.openai.com/v1/chat/completions"
 
     // tuned prompts will have instruction texts appended to the user's prompt in order to
