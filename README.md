@@ -33,7 +33,7 @@ You can also check out where it is on Google Maps!<br />
 <br /><br />
 
 # Things to Consider / Features yet to be added
- - note: code made public without api keys anywhere; need to create gitignore and set things up later
+ - note: use service that supports server-side code for API key related content
  - Need to clear the database at one point (30 day limit?)
  - Should probably let the user choose the cuisine (top three selections by ChatGPT)
  - Add in feature to send user to actual google maps for directions
