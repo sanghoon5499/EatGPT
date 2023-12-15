@@ -13,9 +13,9 @@ You can also check out where it is on Google Maps!<br />
 <br /><br />
 
 # Tech used
-- Google Places
-- ChromaDB (Vector Database)
-- ChatGPT
+- Google Places API
+- ChatGPT API
+- Hopefully one day: ChromaDB (Vector Database)
 <br /><br />
 
 # Pipeline Flow
