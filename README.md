@@ -42,7 +42,7 @@ You can also check out where it is on Google Maps!<br />
 
 # Personal learning + <br />
 # Technology Overview 1: Vector Databases
-This is my first time working with a vector database, so hopefully my explanations are correct, and more importantly, that they make sense to you. Here we go:
+This is my first time working with a vector database, so hopefully my explanations are correct and that they make sense to you. Here we go:
 
 <b>What’s a vector?</b><br />
 A numerical array of Doubles. Used to represent more complex ideas such as words and sentences. These vectors are stored in a higher-dimensional space called an “embedding”.<br />
