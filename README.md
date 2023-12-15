@@ -40,7 +40,7 @@ You can also check out where it is on Google Maps!<br />
 
 <br /><br />
 
-# Personal learning + Technology Overview 1: Vector Databases
+# Personal learning + <br /> Technology Overview 1: Vector Databases
 This is my first time working with a vector database, so hopefully my explanations are correct, and more importantly, that they make sense to you. Here we go:
 
 <b>What’s a vector?</b><br />
